@@ -1,0 +1,84 @@
+<html>
+	<head>
+		<title>RemoteSMS</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	</head>
+	<body>
+	
+		<style type="text/css">
+			#wrap{
+				width:600px;
+				margin:0 auto;
+			}
+			#left_col{
+				float:left;
+				width:40%
+			}
+			#right_col{
+				margin-left:40%
+			}
+			.sender{
+				text-decoration:underline
+			}
+		</style>
+		
+		<div id="left_col">
+			<table id="sender_table" border="1">
+			</table>
+		</div>
+		
+		<div id="right_col">
+			<table id="msg_table" border="0">
+			</table>
+		</div>
+		<script type="text/javascript" src="jquery_2_0_3_dev.js"></script>
+		<script type="text/javascript" src="index.js"></script>
+		<script type="text/javascript">
+			var current_sender;
+			connection.onmessage=function(msg){console.log('server: ' + msg.data);
+											var json=JSON.parse(msg.data);
+											if(typeof json.all_senders != 'undefined'){
+												$("#sender_table tr").remove();
+												json.all_senders.forEach(function(entry){
+													if(entry.name == ""){
+														$("#sender_table").append("<tr><td class='sender' id='" + entry.number + "'>" + entry.number + "</td></tr>" );
+													}else{
+														$("#sender_table").append("<tr><td class='sender' id='" + entry.number + "'>" + entry.name + "</td></tr>");
+													}
+												});
+												$(".sender").click(function(){
+													getMsgFromSender(this.id);
+													current_sender = this.id;
+												});
+												return;
+											}
+											if(typeof json.message_list != 'undefined'){
+												$("#msg_table tr").remove();
+												for(var i = json.message_list.length - 1; i >= 0; i --){
+													if(json.message_list[i].type == 1){//msg received
+														$("#msg_table").append("<tr><td class='out_msg'>" + json.message_list[i].body + "</td></tr>");
+													}
+													else if(json.message_list[i].type == 2){//msg sent
+														$("#msg_table").append("<tr><td class='in_mnsg' align='right'>" + json.message_list[i].body + "</td></tr>");
+													}else if(json.message_list[i].type == 5){//msg failed to send
+														$("#msg_table").append("<tr><td class='in_mnsg' align='right'>" + json.message_list[i].body +"(!)" + "</td></tr>");
+													}
+												} 
+												$("#msg_table").append("<tr><td class='input_area'><textarea rows='4' col='200' id='input_box'/><button type='button' id='send_btn'>Send</button>");
+												$("#send_btn").click(function(){
+													connection.send("SEND " + current_sender + " " + $("#input_box").val());
+													$("#input_box").val("");
+												});
+												return;
+											}
+							};
+			function getMsgFromSender(sender){
+				console.log(sender + " has been clicked");
+				connection.send("GET " + sender);
+			}
+			function sendSMS(){
+			}
+		</script>
+	</body>
+</html>
+
